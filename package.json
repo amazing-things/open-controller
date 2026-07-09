@@ -1,0 +1,58 @@
+{
+  "name": "open-controller",
+  "version": "1.0.1",
+  "description": "OpenCode plugin for Windows PC control via MCP",
+  "license": "MIT",
+  "author": "amazing_things <thelastlight3169@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amazing-things/open-controller"
+  },
+  "homepage": "https://github.com/amazing-things/open-controller",
+  "bugs": "https://github.com/amazing-things/open-controller/issues",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "mcp",
+    "windows",
+    "pc-control",
+    "desktop-automation",
+    "windows-mcp"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "lint": "tsc --noEmit",
+    "version": "npm run build"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.17.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
