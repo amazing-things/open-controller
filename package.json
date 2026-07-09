@@ -1,6 +1,6 @@
 {
   "name": "open-controller",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "OpenCode plugin for Windows PC control via MCP",
   "license": "MIT",
   "author": "amazing_things <thelastlight3169@gmail.com>",
