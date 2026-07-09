@@ -26,10 +26,17 @@ Control your Windows PC directly from OpenCode. Uses the [windows-mcp](https://g
 
 ### 1. Install the npm plugin
 
-In your OpenCode config directory:
+In your OpenCode config directory (typically `%USERPROFILE%\.config\opencode`):
 
-```bash
-cd ~/.config/opencode
+```cmd
+cd %USERPROFILE%\.config\opencode
+npm install open-controller
+```
+
+Or with PowerShell:
+
+```powershell
+cd ~\.config\opencode
 npm install open-controller
 ```
 
@@ -41,7 +48,7 @@ pip install windows-mcp
 
 ### 3. Add to OpenCode config
 
-Add `"open-controller"` to the `"plugin"` array in `~/.config/opencode/opencode.jsonc` if not already present:
+Add `"open-controller"` to the `"plugin"` array in `%USERPROFILE%\.config\opencode\opencode.jsonc` if not already present:
 
 ```jsonc
 {
@@ -136,12 +143,24 @@ The plugin:
 
 ## Development
 
-The plugin is at `~/.config/opencode/plugins/open-controller.ts`. To modify:
+The plugin source is at the [GitHub repo](https://github.com/amazing-things/open-controller). To modify locally:
 
-```bash
-code ~/.config/opencode/plugins/open-controller.ts
-# Restart OpenCode to apply changes
+```cmd
+:: Clone the repo
+git clone https://github.com/amazing-things/open-controller.git
+cd open-controller
+
+:: Install dependencies
+npm install
+
+:: Build
+npm run build
+
+:: Use the local version in OpenCode
+:: Add "./path/to/open-controller" to opencode.jsonc plugin list
 ```
+
+Restart OpenCode to apply changes.
 
 ## License
 
