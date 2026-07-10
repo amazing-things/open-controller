@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+- Add a system instructions system. The plugin now ships a curated `instructions/WINDOWS_CONTROLLER.md` and injects it into the agent's system prompt on every session via the `experimental.chat.system.transform` hook. The guide covers the most common failure modes reported by windows-mcp users: focus/foreground race, "am I on the right window?" verification, snapshot-first workflow, long-text input via clipboard, MCP -32001 retry semantics, ARM64 / UAC / RDP edge cases, and a recovery playbook.
+- Add the `pc-mcp-instructions` tool that returns the full system instructions on demand, so the agent (or a human) can confirm what rules are loaded.
+- Document the new "How system instructions work" and "Best practices" sections in the README.
+- Bump version to 1.1.0 (minor — adds a new feature: the instruction system).
+
 ## 1.0.4
 
 - Fix: `windows-mcp_*` tools no longer hang with `MCP error -32001: Request timed out`.

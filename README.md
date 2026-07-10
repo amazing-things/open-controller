@@ -118,6 +118,20 @@ Two extra tools are registered directly on the plugin:
 |------|-------------|
 | `pc-exec` | Execute any PowerShell command with output |
 | `pc-screenshot` | Capture desktop as base64 PNG image |
+| `pc-mcp-status` | Run a Python import + `Desktop()` smoke test for the MCP server |
+| `pc-mcp-instructions` | Return the system instructions the plugin injected into the agent |
+
+## System instructions
+
+Every session, the plugin reads [`instructions/WINDOWS_CONTROLLER.md`](instructions/WINDOWS_CONTROLLER.md) and injects its content into the agent's system prompt through the `experimental.chat.system.transform` hook. The instructions cover the most common failure modes reported by windows-mcp users in the wild:
+
+- **Foreground verification** — how to detect the "I think I'm on the right window but my actions go to the wrong one" race, and how to recover.
+- **Snapshot-first workflow** — when and how to call `windows-mcp_Snapshot`, how to read its tree, and how to resolve label ids.
+- **Long text input** — why `windows-mcp_Type` with 30+ chars can hang, and when to fall back to clipboard + `ctrl+v`.
+- **Timeout semantics** — `MCP error -32001: Request timed out` does not mean the operation failed; it means the 30 s MCP client ceiling elapsed. Retry with a fresh snapshot, do not loop.
+- **Edge cases** — ARM64 hosts, UAC / Secure Desktop, RDP / Server sessions, electron / sheet / canvas apps.
+
+The full text is shipped with the npm package under `instructions/`. To view it inside a session, call `pc-mcp-instructions` — the tool returns the exact same text that was injected into the system prompt.
 
 ## Architecture
 
@@ -139,7 +153,8 @@ The plugin:
 1. Loads on OpenCode startup
 2. Pre-warms the Python MCP server (imports `comtypes.client` and instantiates `Desktop()` so the first MCP tool call is fast)
 3. Registers the MCP server config in OpenCode with `ANONYMIZED_TELEMETRY=false` and unbuffered stdio
-4. Adds `pc-exec`, `pc-screenshot`, and `pc-mcp-status` as native plugin tools
+4. Adds `pc-exec`, `pc-screenshot`, `pc-mcp-status`, and `pc-mcp-instructions` as native plugin tools
+5. Injects the contents of `instructions/WINDOWS_CONTROLLER.md` into the agent's system prompt via the `experimental.chat.system.transform` hook
 
 ## Development
 

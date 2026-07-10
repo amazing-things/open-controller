@@ -1,6 +1,7 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import { execSync } from "child_process"
+import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { homedir } from "os"
 
@@ -8,6 +9,7 @@ const PYTHON_CMD = "C:\\Program Files\\Python311\\python.exe"
 const MCP_WRAPPER = join(homedir(), ".windows-mcp", "mcp_runner.py")
 const PRE_WARM_TIMEOUT_MS = 30000
 const PC_EXEC_TIMEOUT_MS = 60000
+const INSTRUCTIONS_FILE = join(__dirname, "..", "instructions", "WINDOWS_CONTROLLER.md")
 
 const ps = (cmd: string): string => {
   try {
@@ -52,6 +54,21 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
   if (!installed) {
     console.warn(
       "[open-controller] windows_mcp package not found. Install: pip install windows-mcp",
+    )
+  }
+
+  let systemInstructions = ""
+  try {
+    if (existsSync(INSTRUCTIONS_FILE)) {
+      systemInstructions = readFileSync(INSTRUCTIONS_FILE, "utf8")
+    } else {
+      console.warn(
+        `[open-controller] System instructions not found at ${INSTRUCTIONS_FILE}. Plugin will run without them.`,
+      )
+    }
+  } catch (e: any) {
+    console.warn(
+      `[open-controller] Failed to load system instructions: ${e?.message ?? "unknown"}`,
     )
   }
 
@@ -123,6 +140,27 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
           return importOk
         },
       }),
+
+      "pc-mcp-instructions": tool({
+        description:
+          "Return the system instructions that this plugin injects into the agent's system prompt. Use it to confirm what rules the agent is following, or to remind yourself of the recovery playbook.",
+        args: {},
+        execute: async () => {
+          if (!systemInstructions) {
+            return "System instructions are not available. The instructions file was not found at plugin startup."
+          }
+          return systemInstructions
+        },
+      }),
+    },
+
+    "experimental.chat.system.transform": async (
+      _input: { sessionID?: string; model?: any },
+      output: { system: string[] },
+    ) => {
+      if (systemInstructions) {
+        output.system.push(systemInstructions)
+      }
     },
   }
 }
