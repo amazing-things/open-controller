@@ -95,3 +95,86 @@ For form fields and dialogs:
 | `Snapshot` returns empty tree | Secure Desktop, or app not in active session | Inform user; do not loop |
 | `Click` lands on stale coordinates | Window resized/moved between snapshot and click | Re-snapshot, re-resolve label, click again |
 | `pc-exec` returns no output | PowerShell command exited immediately with no stdout | Append `; $null` to the script or write to a file and read with `Get-Content` |
+
+## 9. Window positioning (self-managed)
+
+**Default rule: do not ask the user before repositioning a window that is blocking your task.** Take ownership of placement. The cost of a permission round-trip is almost always higher than the cost of a wrong guess, and you can always undo a move.
+
+### When to move or resize without asking
+
+Act on your own initiative in any of these cases:
+
+- The target window is **partially off-screen** (right or bottom edge clipped), or its title bar is above the visible work area, so you cannot grab it to drag or click its controls.
+- The target window is **stacked under another window** that is also responsive to UIA but is the wrong app — i.e. the foreground is on a sibling window. After `App(mode="switch")` does not bring the target forward, **move the target in front** rather than looping.
+- The target window is **smaller than ~400×300** and the element you need to click is hidden behind a docked panel, a ribbon, or a side panel. Resize to give yourself headroom.
+- The target window's **bounds reported in the snapshot are stale** (e.g. the user just moved or resized it manually). Re-snapshot, and if the new bounds would push a click outside the visible work area, recenter first.
+- The active window is **larger than the screen** (zoomed IDE on a 1080p monitor). Shrink it to a usable size before the next click.
+
+### How to decide whether to move, resize, or both
+
+Use the snapshot's `bounds` (`x, y, width, height` in screen pixels) and the **virtual screen** reported by `pc-screenshot` or the snapshot's `displays` array:
+
+1. **Compute the visible work area.** Read it once with `pc-exec` and cache:
+   ```powershell
+   Add-Type -AssemblyName System.Windows.Forms
+   [System.Windows.Forms.Screen]::AllScreens |
+     ForEach-Object { "{0} {1} {2} {3}" -f $_.Bounds.X,$_.Bounds.Y,$_.Bounds.Width,$_.Bounds.Height }
+   ```
+   Pick the monitor that contains the target window's center; that is its **work area**.
+2. **Classify the target window's placement** (do this in your head, then act):
+   - **Fully on-screen, not covered, size OK** → leave it alone. Do not move for cosmetics.
+   - **Off-screen on one edge** → shift it back inside by the overshoot amount, on the same monitor. If it would still cover the taskbar, lift the bottom edge above it.
+   - **Covered by another UIA-visible window** → bring the target forward (`App mode="switch"`); only if that fails twice, move it 80 px right and 80 px down so it overlaps a different region.
+   - **Too small to contain the target element** → resize to the element's bounds + 80 px padding on every side, capped at 80% of the work-area width/height.
+   - **Too large for the work area** → shrink to 80% of the work area, then re-center.
+   - **Multi-monitor straddling** (window spans two displays) → snap it fully inside the monitor that has the keyboard focus / `active_window` center.
+3. **Prefer the smallest change that solves the problem.** A 100 px nudge is better than a 400 px jump. A resize to 1024×768 is better than a resize to 1920×1080. Move first, resize only if the move did not expose the target.
+
+### How to move / resize
+
+`windows-mcp_App(mode="resize", name=..., size=(W,H), loc=(X,Y))` does both in one call. The window must be the active window; if it is not, switch to it first, wait 300 ms, then resize. Coordinates are screen pixels relative to the primary monitor's `(0, 0)` unless the system DPI is non-100%; in that case, read the window's current bounds from the snapshot and translate by the same DPI scale.
+
+If `windows-mcp_App(mode="resize")` fails or the window is a system tray / elevated / Secure Desktop app (which user-mode processes cannot move), fall back to `pc-exec` with PowerShell:
+
+```powershell
+Add-Type @"
+using System; using System.Runtime.InteropServices;
+public class W {
+  [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int h, bool repaint);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr h);
+  [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+  [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L,T,R,B; }
+}
+"@
+
+# Find target hwnd by title (exact or substring)
+$hwnds = Get-Process | Where-Object { $_.MainWindowTitle -like "*Notepad*" } | Select-Object -ExpandProperty MainWindowHandle
+$h = $hwnds | Select-Object -First 1
+[W]::ShowWindow($h, 9) | Out-Null   # SW_RESTORE
+[W]::SetForegroundWindow($h) | Out-Null
+[W]::MoveWindow($h, 200, 200, 1200, 800, $true) | Out-Null
+```
+
+### When to still ask the user
+
+Move/resize on your own in every case above without asking. The only exceptions — where you should ask first — are:
+
+- The user explicitly said "do not move my windows" in the current session, or the active task says "minimize / keep this hidden" (e.g. screen-recording workflows).
+- The target is an **elevated or Secure Desktop** window. User-mode cannot move it; the user must do it manually.
+- The target is a **fullscreen exclusive app** (game, presentation, video player). Moving it would tear the frame; only restore it from fullscreen.
+
+In all other cases, **reposition, then continue**. Do not break your task into a chat round-trip just to confirm a 100 px shift.
+
+### Verify the move worked
+
+After any move/resize:
+
+1. `windows-mcp_Snapshot` again.
+2. Confirm the new `active_window.bounds` matches what you intended (within 10 px).
+3. If the bounds are still wrong, retry once with corrected numbers; if still wrong, fall back to `pc-exec` + `MoveWindow`.
+4. Only then proceed with the original click / type.

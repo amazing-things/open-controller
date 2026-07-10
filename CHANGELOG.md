@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.6
+
+- Extend `instructions/WINDOWS_CONTROLLER.md` with a new "Window positioning (self-managed)" section. The agent is now instructed to detect, classify, and resolve five common window-placement problems (off-screen, covered by another window, too small for the target element, too large for the work area, multi-monitor straddling) **without asking the user**. The rule includes: smallest-change-first principle, the canonical move/resize API (`windows-mcp_App(mode="resize", ...)`), a `pc-exec` PowerShell `MoveWindow` P/Invoke fallback, and explicit situations where the agent must still defer to the user (screen-recording, elevated / Secure Desktop, fullscreen exclusive apps).
+
 ## 1.1.5
 
 - No code changes; version bump to 1.1.5 as requested by the maintainer.
