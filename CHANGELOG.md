@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8
+
+- Add a built-in auto-updater. On every OpenCode session start the plugin silently checks the latest version on the npm registry and, if newer, runs `npm install -g open-controller` for the user. A Windows toast notification then asks the user to restart OpenCode so the new code is loaded. The check is fire-and-forget (`setImmediate`) and never blocks the agent.
+- Opt out with the `OPENCONTROLLER_DISABLE_UPDATER=1` environment variable. The updater is also a no-op in CI environments (when `CI`, `CONTINUOUS_INTEGRATION`, `GITHUB_ACTIONS`, or `GITLAB_CI` is set).
+- Document the new "Auto-update" section in the README.
+
 ## 1.1.7
 
 - Set the OpenCode MCP client timeout for `windows-mcp` to **10 minutes** (`600000 ms`) so the long-running UI Automation calls (Snapshot on busy windows, SendKeys on long text, App launch waits) never hit the 30 s default ceiling that produced `MCP error -32001: Request timed out`. This applies even to users who install `windows-mcp` from scratch — the plugin enforces its own timeout, not the OpenCode default.

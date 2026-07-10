@@ -190,6 +190,15 @@ npm run build
 
 Restart OpenCode to apply changes.
 
+## Auto-update
+
+Starting with v1.1.8, the plugin updates itself. On every OpenCode session start it silently runs `npm view open-controller version`, and if a newer version is on the registry, it runs `npm install -g open-controller` for you. A Windows toast notification then asks you to restart OpenCode so the new code is loaded.
+
+- **No agent action required** — the check happens in a `setImmediate` background task and never blocks the agent or your session.
+- **Opt out** — set `OPENCONTROLLER_DISABLE_UPDATER=1` in the environment before launching OpenCode.
+- **CI is skipped automatically** — if `CI`, `CONTINUOUS_INTEGRATION`, `GITHUB_ACTIONS`, or `GITLAB_CI` is set, the updater is a no-op.
+- **Restart to apply** — the running OpenCode process keeps the old code in memory until you restart it, even after the global install finishes.
+
 ## Troubleshooting
 
 ### `MCP error -32001: Request timed out` on `windows-mcp_*` tools
