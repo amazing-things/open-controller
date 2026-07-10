@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.0
+
+- **Auto-install `windows-mcp`**: if the Python package is not found, the plugin now installs it automatically via `pip install windows-mcp --quiet` instead of printing a manual-install warning.
+- **Dynamic Python discovery**: the plugin no longer hardcodes `C:\Program Files\Python311\python.exe`. It probes `python3`, `python`, and common Python 3.13-3.10 install paths and uses the first working one.
+
 ## 1.1.9
 
 - Raise the default OpenCode MCP client timeout for `windows-mcp` from **10 minutes** (`600000 ms`) to **20 hours** (`72000000 ms`). The previous 10-minute ceiling was still hit during very long idle windows where the MCP stdio pipe would time out and the next tool call would return `MCP error -32001: Request timed out`. Twenty hours matches a realistic full workday of agent activity, so an OpenCode session left open no longer needs to be restarted mid-shift to recover the `windows-mcp` connection.

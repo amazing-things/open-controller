@@ -1,11 +1,34 @@
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
-import { execSync } from "child_process"
+import { execSync, spawn } from "child_process"
 import { existsSync, readFileSync } from "fs"
 import { join } from "path"
 import { homedir } from "os"
 
-const PYTHON_CMD = "C:\\Program Files\\Python311\\python.exe"
+const findPython = (): string => {
+  const candidates = [
+    "python3",
+    "python",
+    "C:\\Program Files\\Python313\\python.exe",
+    "C:\\Program Files\\Python312\\python.exe",
+    "C:\\Program Files\\Python311\\python.exe",
+    "C:\\Program Files\\Python310\\python.exe",
+    "C:\\Users\\oguzhan\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+    "C:\\Users\\oguzhan\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "C:\\Users\\oguzhan\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  ]
+  for (const cmd of candidates) {
+    try {
+      execSync(`"${cmd}" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"`, {
+        encoding: "utf8", timeout: 10000, windowsHide: true,
+      })
+      return cmd
+    } catch {}
+  }
+  return candidates[2]
+}
+
+const PYTHON_CMD = findPython()
 const MCP_WRAPPER = join(homedir(), ".windows-mcp", "mcp_runner.py")
 const PRE_WARM_TIMEOUT_MS = 30000
 const PC_EXEC_TIMEOUT_MS = 60000
@@ -36,8 +59,26 @@ const checkMcpInstalled = (): boolean => {
   }
 }
 
+const installMcp = (): boolean => {
+  try {
+    console.log("[open-controller] Installing windows_mcp via pip...")
+    execSync(`"${PYTHON_CMD}" -m pip install windows-mcp --quiet`, {
+      encoding: "utf8", timeout: 120000, windowsHide: true,
+    })
+    console.log("[open-controller] windows_mcp installed successfully")
+    return true
+  } catch (e: any) {
+    console.warn(`[open-controller] pip install failed: ${e?.message ?? "unknown"}`)
+    return false
+  }
+}
+
 const PcControllerPlugin: Plugin = async (_ctx) => {
-  const installed = checkMcpInstalled()
+  let installed = checkMcpInstalled()
+
+  if (!installed) {
+    installed = installMcp()
+  }
 
   if (installed) {
     try {
@@ -50,12 +91,6 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
         `[open-controller] Pre-warm failed (${e?.message ?? "unknown"}); MCP server will retry on first tool call.`,
       )
     }
-  }
-
-  if (!installed) {
-    console.warn(
-      "[open-controller] windows_mcp package not found. Install: pip install windows-mcp",
-    )
   }
 
   let systemInstructions = ""
