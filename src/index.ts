@@ -80,6 +80,7 @@ const installMcp = (): boolean => {
 }
 
 const PcControllerPlugin: Plugin = async (_ctx) => {
+  process.stderr.write("[open-controller] Plugin loaded successfully\n")
   runUpdater()
 
   let installed = checkMcpInstalled()

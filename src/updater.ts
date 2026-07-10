@@ -1,7 +1,8 @@
 import { execSync, spawn } from "child_process"
-import { existsSync, readFileSync } from "fs"
+import { readFileSync } from "fs"
 import { join, dirname } from "path"
 import { homedir } from "os"
+import { fileURLToPath } from "url"
 
 const NPM_TIMEOUT_MS = 60_000
 const CHECK_TIMEOUT_MS = 30_000
@@ -23,7 +24,7 @@ const isCI = (): boolean =>
 
 const readLocalVersion = (): string | null => {
   try {
-    const pkgPath = join(dirname(new URL(import.meta.url).pathname.replace(/^\//, "")), "..", "package.json")
+    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json")
     const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { name?: string; version?: string }
     if (pkg.name === PKG_NAME && pkg.version) return pkg.version
   } catch {}
@@ -55,10 +56,11 @@ const compareSemver = (a: string, b: string): number => {
 }
 
 const runNpmInstall = (): boolean => {
-  const pluginRoot = join(homedir(), ".opencode", "plugins", PKG_NAME)
-  if (!existsSync(pluginRoot)) return false
   try {
-    execSync(`npm install -g ${PKG_NAME} --silent --no-audit --no-fund --no-progress`, {
+    const self = dirname(fileURLToPath(import.meta.url))
+    const configRoot = join(self, "..", "..", "..")
+    execSync(`npm install ${PKG_NAME}@latest --no-audit --no-fund --no-progress`, {
+      cwd: configRoot,
       encoding: "utf8",
       timeout: NPM_TIMEOUT_MS,
       windowsHide: true,
@@ -67,7 +69,7 @@ const runNpmInstall = (): boolean => {
     return true
   } catch (e: any) {
     console.warn(
-      `[open-controller] Auto-update failed: ${e?.message ?? "unknown"}. Falling back to local install.`,
+      `[open-controller] Auto-update failed: ${e?.message ?? "unknown"}.`,
     )
     return false
   }
