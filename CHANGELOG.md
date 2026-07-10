@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5
+
+- No code changes; version bump to 1.1.5 as requested by the maintainer.
+
 ## 1.1.0
 
 - Add a system instructions system. The plugin now ships a curated `instructions/WINDOWS_CONTROLLER.md` and injects it into the agent's system prompt on every session via the `experimental.chat.system.transform` hook. The guide covers the most common failure modes reported by windows-mcp users: focus/foreground race, "am I on the right window?" verification, snapshot-first workflow, long-text input via clipboard, MCP -32001 retry semantics, ARM64 / UAC / RDP edge cases, and a recovery playbook.
