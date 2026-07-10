@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1
+
+- **Fix: ES module `__dirname` crash**. Replaced `__dirname` with `import.meta.url` + `fileURLToPath` so the plugin loads correctly in OpenCode's ESM context.
+- **Wired auto-updater**. `runUpdater()` is now called during plugin initialization. When a newer version is published to npm, the plugin auto-updates and notifies the user.
+
 ## 2.0.0
 
 - **Auto-install `windows-mcp`**: if the Python package is not found, the plugin now installs it automatically via `pip install windows-mcp --quiet` instead of printing a manual-install warning.

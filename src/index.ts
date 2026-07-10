@@ -2,8 +2,14 @@ import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
 import { execSync, spawn } from "child_process"
 import { existsSync, readFileSync } from "fs"
-import { join } from "path"
+import { join, dirname } from "path"
 import { homedir } from "os"
+import { runUpdater } from "./updater.js"
+
+import { fileURLToPath } from "url"
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const findPython = (): string => {
   const candidates = [
@@ -74,6 +80,8 @@ const installMcp = (): boolean => {
 }
 
 const PcControllerPlugin: Plugin = async (_ctx) => {
+  runUpdater()
+
   let installed = checkMcpInstalled()
 
   if (!installed) {
