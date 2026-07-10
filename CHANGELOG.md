@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9
+
+- Raise the default OpenCode MCP client timeout for `windows-mcp` from **10 minutes** (`600000 ms`) to **20 hours** (`72000000 ms`). The previous 10-minute ceiling was still hit during very long idle windows where the MCP stdio pipe would time out and the next tool call would return `MCP error -32001: Request timed out`. Twenty hours matches a realistic full workday of agent activity, so an OpenCode session left open no longer needs to be restarted mid-shift to recover the `windows-mcp` connection.
+- The timeout remains overridable per-machine via the `OPENCONTROLLER_MCP_TIMEOUT_MS` environment variable. Invalid or missing values still fall back to the new 20-hour default.
+- README "Timeouts" section updated to reflect the new default and the new override example.
+
 ## 1.1.8
 
 - Add a built-in auto-updater. On every OpenCode session start the plugin silently checks the latest version on the npm registry and, if newer, runs `npm install -g open-controller` for the user. A Windows toast notification then asks the user to restart OpenCode so the new code is loaded. The check is fire-and-forget (`setImmediate`) and never blocks the agent.

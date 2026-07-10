@@ -155,11 +155,11 @@ The plugin:
 3. Registers the MCP server config in OpenCode with `ANONYMIZED_TELEMETRY=false` and unbuffered stdio
 4. Adds `pc-exec`, `pc-screenshot`, `pc-mcp-status`, and `pc-mcp-instructions` as native plugin tools
 5. Injects the contents of `instructions/WINDOWS_CONTROLLER.md` into the agent's system prompt via the `experimental.chat.system.transform` hook
-6. Sets the `windows-mcp` MCP client timeout to **10 minutes** (600000 ms) so long-running UI Automation calls do not hit OpenCode's 30 s default ceiling
+6. Sets the `windows-mcp` MCP client timeout to **20 hours** (72000000 ms) so long-running UI Automation calls do not hit OpenCode's 30 s default ceiling
 
 ## Timeouts
 
-The plugin overrides the OpenCode MCP client timeout for the `windows-mcp` server with `cfg.mcp["windows-mcp"].timeout = 600000` (10 minutes). This applies automatically — even to users who install `windows-mcp` from scratch — and prevents the `MCP error -32001: Request timed out` failures that occur when `Snapshot`, `SendKeys`, or `App` (launch) operations run longer than OpenCode's 30 s default.
+The plugin overrides the OpenCode MCP client timeout for the `windows-mcp` server with `cfg.mcp["windows-mcp"].timeout = 72000000` (20 hours). This applies automatically — even to users who install `windows-mcp` from scratch — and prevents the `MCP error -32001: Request timed out` failures that occur when `Snapshot`, `SendKeys`, or `App` (launch) operations run longer than OpenCode's 30 s default.
 
 To override the default, set the `OPENCONTROLLER_MCP_TIMEOUT_MS` environment variable before launching OpenCode. The value must be a positive integer in milliseconds.
 
@@ -167,7 +167,7 @@ To override the default, set the `OPENCONTROLLER_MCP_TIMEOUT_MS` environment var
 setx OPENCONTROLLER_MCP_TIMEOUT_MS 1200000   :: 20 minutes
 ```
 
-Invalid or missing values fall back to the 10-minute default. The native `pc-exec` tool still has its own 60 s ceiling; raise it by editing `PC_EXEC_TIMEOUT_MS` in `src/index.ts`.
+Invalid or missing values fall back to the 20-hour default. The native `pc-exec` tool still has its own 60 s ceiling; raise it by editing `PC_EXEC_TIMEOUT_MS` in `src/index.ts`.
 
 ## Development
 

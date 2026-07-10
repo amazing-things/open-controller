@@ -9,7 +9,7 @@ const PYTHON_CMD = "C:\\Program Files\\Python311\\python.exe"
 const MCP_WRAPPER = join(homedir(), ".windows-mcp", "mcp_runner.py")
 const PRE_WARM_TIMEOUT_MS = 30000
 const PC_EXEC_TIMEOUT_MS = 60000
-const MCP_DEFAULT_TIMEOUT_MS = 600000
+const MCP_DEFAULT_TIMEOUT_MS = 72000000
 const INSTRUCTIONS_FILE = join(__dirname, "..", "instructions", "WINDOWS_CONTROLLER.md")
 
 const ps = (cmd: string): string => {
