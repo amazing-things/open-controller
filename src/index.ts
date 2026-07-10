@@ -6,12 +6,14 @@ import { homedir } from "os"
 
 const PYTHON_CMD = "C:\\Program Files\\Python311\\python.exe"
 const MCP_WRAPPER = join(homedir(), ".windows-mcp", "mcp_runner.py")
+const PRE_WARM_TIMEOUT_MS = 30000
+const PC_EXEC_TIMEOUT_MS = 60000
 
 const ps = (cmd: string): string => {
   try {
     return execSync(cmd, {
       encoding: "utf8",
-      timeout: 30000,
+      timeout: PC_EXEC_TIMEOUT_MS,
       shell: "powershell",
     }).trim()
   } catch (e: any) {
@@ -23,7 +25,7 @@ const checkMcpInstalled = (): boolean => {
   try {
     execSync(
       `"${PYTHON_CMD}" -c "from windows_mcp.__main__ import main"`,
-      { encoding: "utf8" },
+      { encoding: "utf8", timeout: 30000 },
     )
     return true
   } catch {
@@ -37,11 +39,13 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
   if (installed) {
     try {
       execSync(
-        `"${PYTHON_CMD}" -c "import comtypes.client; import windows_mcp; print('ok')"`,
-        { encoding: "utf8", timeout: 15000 },
+        `"${PYTHON_CMD}" -c "import comtypes.client, windows_mcp; from windows_mcp.desktop.service import Desktop; d=Desktop(); d.get_screen_size(); del d; print('pre-warm-ok')"`,
+        { encoding: "utf8", timeout: PRE_WARM_TIMEOUT_MS },
       )
-    } catch {
-      /* pre-warm failed, non-fatal */
+    } catch (e: any) {
+      console.warn(
+        `[open-controller] Pre-warm failed (${e?.message ?? "unknown"}); MCP server will retry on first tool call.`,
+      )
     }
   }
 
@@ -58,13 +62,18 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
         type: "local",
         command: [PYTHON_CMD, MCP_WRAPPER, "serve", "--transport", "stdio"],
         enabled: true,
+        environment: {
+          ANONYMIZED_TELEMETRY: "false",
+          PYTHONUNBUFFERED: "1",
+          PYTHONIOENCODING: "utf-8",
+        },
       }
     },
 
     tool: {
       "pc-exec": tool({
         description:
-          "Execute a PowerShell command on this Windows PC. Use for file, process, registry, clipboard, UI automation tasks.",
+          "Execute a PowerShell command on this Windows PC. Use for file, process, registry, clipboard, UI automation tasks. Default timeout 60s.",
         args: {
           command: tool.schema.string().describe("PowerShell command to execute"),
         },
@@ -100,6 +109,18 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
               },
             ],
           }
+        },
+      }),
+
+      "pc-mcp-status": tool({
+        description:
+          "Check whether the windows-mcp Python package is importable, and the latest pre-warm result. Useful to diagnose MCP -32001 timeouts.",
+        args: {},
+        execute: async () => {
+          const importOk = ps(
+            `"${PYTHON_CMD}" -c "import windows_mcp; print('import:ok'); from windows_mcp.desktop.service import Desktop; d=Desktop(); d.get_screen_size(); del d; print('init:ok')"`,
+          )
+          return importOk
         },
       }),
     },

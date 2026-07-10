@@ -137,9 +137,9 @@ OpenCode
 
 The plugin:
 1. Loads on OpenCode startup
-2. Pre-warms the Python MCP server (imports `comtypes.client` for faster first call)
-3. Registers the MCP server config in OpenCode
-4. Adds `pc-exec` and `pc-screenshot` as native plugin tools
+2. Pre-warms the Python MCP server (imports `comtypes.client` and instantiates `Desktop()` so the first MCP tool call is fast)
+3. Registers the MCP server config in OpenCode with `ANONYMIZED_TELEMETRY=false` and unbuffered stdio
+4. Adds `pc-exec`, `pc-screenshot`, and `pc-mcp-status` as native plugin tools
 
 ## Development
 
@@ -161,6 +161,23 @@ npm run build
 ```
 
 Restart OpenCode to apply changes.
+
+## Troubleshooting
+
+### `MCP error -32001: Request timed out` on `windows-mcp_*` tools
+
+This is the most common failure mode. The MCP client cancels the call after 30s of silence. Causes (most likely first):
+
+1. **First tool call is slow** — the underlying `Desktop()` initialization runs UIA COM init, which can take 5–15s on first use, longer on machines with many open windows. v1.0.4 pre-warms `Desktop()` during plugin startup, but if pre-warm fails, the first MCP call still pays the cost.
+2. **Heavy UIA enumeration** — calling `Snapshot` on a window that is "launching / not responding" can hang the UIA enumeration for 30s+. Use `windows-mcp_Type` / `windows-mcp_Click` only on responsive windows.
+3. **Network/telemetry** — v1.0.4 sets `ANONYMIZED_TELEMETRY=false` by default to avoid the PostHog analytics call inside the MCP server lifespan.
+4. **Long PowerShell scripts** — `pc-exec` default timeout is now 60s. Split long scripts.
+
+Diagnostic steps:
+
+1. Run `pc-mcp-status` from the agent — it imports `windows_mcp` and instantiates `Desktop()` once. If this returns `init:ok`, the package is healthy.
+2. Check `~/.windows-mcp/server.log` and `~/.windows-mcp/server.error.log` for the underlying Python stack trace.
+3. If timeouts persist, set `WINDOWS_MCP_DISABLE_WATCHDOG=1` in the MCP environment (v1.0.4 reads it from the config) to skip the STA event pump and reduce lock contention.
 
 ## License
 
