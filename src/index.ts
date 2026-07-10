@@ -9,6 +9,7 @@ const PYTHON_CMD = "C:\\Program Files\\Python311\\python.exe"
 const MCP_WRAPPER = join(homedir(), ".windows-mcp", "mcp_runner.py")
 const PRE_WARM_TIMEOUT_MS = 30000
 const PC_EXEC_TIMEOUT_MS = 60000
+const MCP_DEFAULT_TIMEOUT_MS = 600000
 const INSTRUCTIONS_FILE = join(__dirname, "..", "instructions", "WINDOWS_CONTROLLER.md")
 
 const ps = (cmd: string): string => {
@@ -75,10 +76,19 @@ const PcControllerPlugin: Plugin = async (_ctx) => {
   return {
     config: async (cfg: any) => {
       cfg.mcp ??= {}
+      const mcpTimeoutMs = Number.parseInt(
+        process.env.OPENCONTROLLER_MCP_TIMEOUT_MS ?? "",
+        10,
+      )
+      const effectiveTimeoutMs =
+        Number.isFinite(mcpTimeoutMs) && mcpTimeoutMs > 0
+          ? mcpTimeoutMs
+          : MCP_DEFAULT_TIMEOUT_MS
       cfg.mcp["windows-mcp"] = {
         type: "local",
         command: [PYTHON_CMD, MCP_WRAPPER, "serve", "--transport", "stdio"],
         enabled: true,
+        timeout: effectiveTimeoutMs,
         environment: {
           ANONYMIZED_TELEMETRY: "false",
           PYTHONUNBUFFERED: "1",
